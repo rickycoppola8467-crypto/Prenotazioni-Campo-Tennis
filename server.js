@@ -53,24 +53,60 @@ app.post('/api/resetPassword', (req,res)=>{
 
 // ---------------- PRENOTAZIONI ----------------
 app.post('/api/book', (req,res)=>{
-  const { email, nome, campo, data, ora, durata } = req.body;
-  bookings.push({ 
-    id:bookings.length+1, email, nome, campo, start:data, startHour:ora, durata, end:calcEnd(ora,durata)
+  const { email, nome, cognome, campo, data, ora, durata } = req.body;
+  const startHour = parseFloat(ora.replace(':','.')); // es. 14:30 -> 14.5
+  const endHour = startHour + parseFloat(durata);
+
+  // Controllo sovrapposizione
+  const overlapping = bookings.some(b => 
+    b.start === data && b.campo === campo &&
+    (startHour < parseFloat(b.end) && endHour > parseFloat(b.startHour))
+  );
+  if(overlapping) return res.json({ok:false,msg:'Slot già occupato'});
+
+  bookings.push({
+    id: bookings.length+1,
+    email,
+    nome,
+    cognome,
+    campo,
+    start: data,
+    startHour: startHour.toString(),
+    end: endHour.toString()
   });
+
   res.json({ok:true});
 });
 
 // ---------------- CARICA SLOT ----------------
-app.post('/api/getSlots', (req,res)=>{
+app.post('/api/getSlots', (req,res) => {
   const { data, campo, durata } = req.body;
-  const busy = bookings.filter(b=>b.start===data && b.campo===campo)
-                       .map(b=>({start:b.start, end:b.end, user:b.nome}));
-  
-  // esempio: slot libero ogni ora dalle 8 alle 20
-  const allHours = Array.from({length:13},(_,i)=>8+i);
-  const free = allHours
-               .filter(h=>!busy.some(b=>h>=parseInt(b.startHour)&&h<parseInt(b.end)))
-               .map(h=>({ora:h}));
+
+  // Prenotazioni esistenti per quel giorno e campo
+  const busy = bookings
+    .filter(b => b.start === data && b.campo === campo)
+    .map(b => ({
+      start: parseFloat(b.startHour), 
+      end: parseFloat(b.end), 
+      userNome: b.nome + (b.cognome ? ' ' + b.cognome[0] + '.' : '')
+    }));
+
+  // Tutti gli orari disponibili dalle 8:00 alle 22:00
+  let allHours = [];
+  for(let h=8; h<=22-durata; h+=0.5) { // incrementi di 30 minuti
+    allHours.push(h);
+  }
+
+  // Filtra quelli liberi
+  const free = allHours.filter(h => {
+    return !busy.some(b => (h < b.end && h + durata > b.start)); 
+    // Controlla sovrapposizione
+  }).map(h => {
+    const hour = Math.floor(h);
+    const min = h % 1 === 0 ? '00' : '30';
+    return { start: `${hour}:${min}` };
+  });
+
   res.json({ free, busy });
 });
 
