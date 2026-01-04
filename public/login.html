@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+/* ======= STILI IDENTICI AL TUO CODICE ======= */
+* { box-sizing: border-box; margin:0; padding:0; }
+body {font-family: Arial, sans-serif; background: #f4f6f8;}
+.container {width:95%; max-width:900px; margin:auto;}
+.logo-login {width:150px; margin:20px auto; display:block;}
+h2 {text-align:center;}
+input, button {width:85%; max-width:420px; display:block; margin:12px auto; padding:12px;}
+button {background:#6a1b9a; color:white; border:none; border-radius:6px; font-weight:bold;}
+.tabButton.active {background:white; color:#6a1b9a; border:2px solid #6a1b9a;}
+.password-toggle {width:85%; max-width:420px; margin:auto; display:flex; gap:10px;}
+</style>
+</head>
+
+<body>
+<div class="container" id="loginPage">
+  <img src="https://drive.google.com/thumbnail?id=1gozdQWrZKRs7PLNRrW-td4Ky4ehhhjmj&sz=w200" class="logo-login">
+  <h2>Registrati o effettua l'accesso</h2>
+
+  <div id="authTabs" style="display:flex; justify-content:center; gap:10px;">
+    <button class="tabButton active" onclick="showAuthTab('login')">LOGIN</button>
+    <button class="tabButton" onclick="showAuthTab('register')">REGISTRATI</button>
+  </div>
+
+  <div id="loginForm">
+    <input type="email" id="login_email" placeholder="Email">
+    <input type="password" id="login_pass" placeholder="Password">
+    <div class="password-toggle">
+      <input type="checkbox" onclick="togglePassword('login_pass')"> Mostra password
+    </div>
+    <button onclick="login()">Accedi</button>
+    <p style="text-align:center;">
+      <a href="#" onclick="forgotPassword()">Password dimenticata?</a>
+    </p>
+  </div>
+
+  <div id="registerForm" style="display:none;">
+    <input id="reg_nome" placeholder="Nome">
+    <input id="reg_cognome" placeholder="Cognome">
+    <input id="reg_email" placeholder="Email">
+    <input type="password" id="reg_pass" placeholder="Password">
+    <input type="password" id="reg_pass_confirm" placeholder="Conferma Password">
+    <button onclick="register()">Registrati</button>
+  </div>
+</div>
+
+<script>
+let currentUser = null;
+
+async function apiFetch(endpoint, method='POST', body={}) {
+  const res = await fetch(endpoint,{
+    method,
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify(body)
+  });
+  return res.json();
+}
+
+async function login(){
+  const email = login_email.value;
+  const password = login_pass.value;
+  const res = await apiFetch('/api/login','POST',{email,password});
+  if(res.ok){
+    localStorage.setItem('currentUser', JSON.stringify({
+      email, nome:res.nome, ruolo:res.ruolo
+    }));
+    window.location.href = '/app.html';
+  } else alert(res.msg);
+}
+
+async function register(){
+  const res = await apiFetch('/api/register','POST',{
+    email:reg_email.value,
+    nome:reg_nome.value,
+    cognome:reg_cognome.value,
+    password:reg_pass.value,
+    passwordConfirm:reg_pass_confirm.value
+  });
+  alert(res.msg);
+  if(res.ok) window.location.href='/app.html';
+}
+
+function forgotPassword(){ alert("Gestita lato server"); }
+
+function showAuthTab(tab){
+  loginForm.style.display = tab==='login'?'block':'none';
+  registerForm.style.display = tab==='register'?'block':'none';
+}
+
+function togglePassword(id){
+  const i=document.getElementById(id);
+  i.type = i.type==='password'?'text':'password';
+}
+
+window.onload=()=>{
+  if(localStorage.getItem('currentUser')){
+    window.location.href='/app.html';
+  }
+};
+</script>
+</body>
+</html>
