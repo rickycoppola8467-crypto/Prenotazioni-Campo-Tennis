@@ -19,22 +19,34 @@ h2 {text-align:center; margin-bottom:20px;}
 /* ===== INPUT E BOTTONI ===== */
 input {width:85%; max-width:420px; display:block; margin:8px auto; padding:12px; border-radius:6px; border:1px solid #ccc; font-size:1rem;}
 button {width:85%; max-width:420px; display:block; margin:16px auto; padding:12px; border:none; border-radius:6px; font-weight:bold; cursor:pointer; background:#6a1b9a; color:white; transition: all 0.3s;}
+
+/* Hover generico per button (non tab active) */
 button:hover {background:#7e2bcf; color:white;}
 
 /* ===== TAB LOGIN/REG ===== */
 #authTabs {display:flex; justify-content:center; gap:10px; margin-bottom:20px;}
-.tabButton {flex:1; padding:10px 0; cursor:pointer; font-weight:bold; border-radius:6px; border:none; transition: all 0.3s;}
+.tabButton {
+  flex:1; 
+  padding:10px 0; 
+  cursor:pointer; 
+  font-weight:bold; 
+  border-radius:6px; 
+  border:none; 
+  transition: background 0.3s, color 0.3s;
+}
+/* Tab selezionata */
 .tabButton.active {background:white; color:#6a1b9a; border:2px solid #6a1b9a;}
-.tabButton:hover {background:#8e44ad; color:white;}
+/* Hover solo se NON active */
+.tabButton:not(.active):hover {background:#8e44ad; color:white;}
 
 /* ===== PASSWORD TOGGLE ===== */
-.password-toggle {width:85%; max-width:420px; margin:8px auto; display:flex; align-items:center; gap:8px; font-size:0.95rem;}
+.password-toggle {width:85%; max-width:420px; margin:8px auto; display:flex; align-items:center; gap:8px; font-size:0.95rem; flex-wrap: nowrap; white-space: nowrap;}
 .password-toggle input[type="checkbox"] {margin:0; cursor:pointer;}
 
 /* ===== LINK PASSWORD DIMENTICATA ===== */
 .forgot-password {text-align:center; margin-top:10px;}
 .forgot-password a {color:#6a1b9a; font-weight:bold; text-decoration:none;}
-.forgot-password a:hover {text-decoration:underline;}
+.forgot-password a:hover {text-decoration:underline; flex-shrink:0;}
 
 /* ===== FORM NASCOSTO ===== */
 #loginForm, #registerForm {display:flex; flex-direction:column;}
@@ -42,6 +54,7 @@ button:hover {background:#7e2bcf; color:white;}
 /* ===== ERROR MESSAGE ===== */
 #errorMsg {text-align:center; color:red; margin-top:10px;}
 </style>
+
 </head>
 
 <body>
