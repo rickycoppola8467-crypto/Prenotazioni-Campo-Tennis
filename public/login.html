@@ -3,37 +3,67 @@
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <style>
-/* ===== RESET ===== */
-* { box-sizing:border-box; margin:0; padding:0; }
-body {font-family: Arial, sans-serif; background:#f4f6f8;}
-.container {width:95%; max-width:900px; margin:auto;}
+/* ======= RESET & BASE ======= */
+* { box-sizing: border-box; margin:0; padding:0; }
+body {font-family: Arial, sans-serif; background: #f4f6f8;}
+
+/* ===== CONTAINER ===== */
+.container {width:95%; max-width:900px; margin:auto; text-align:center; padding:20px 0;}
+
+/* ===== LOGO ===== */
 .logo-login {width:150px; margin:20px auto; display:block;}
-h2 {text-align:center; margin-bottom:20px;}
 
-/* ===== INPUT & BUTTON ===== */
-input, button {width:85%; max-width:420px; display:block; margin:10px auto; padding:12px; font-size:1.1rem; border-radius:6px; border:1px solid #ccc;}
-button {background:#6a1b9a; color:white; border:none; font-weight:bold; cursor:pointer; transition:0.2s;}
-button:hover {background:white; color:#6a1b9a; border:2px solid #6a1b9a;}
+/* ===== TITOLI ===== */
+h2 {text-align:center; margin-bottom:20px; font-size:2rem;}
 
-/* ===== TABS LOGIN/REG ===== */
-#authTabs {display:flex; justify-content:center; gap:10px; margin-bottom:20px;}
-.tabButton {flex:1; padding:10px; background:#6a1b9a; color:white; border:none; border-radius:6px; font-weight:bold; cursor:pointer; transition:0.2s;}
-.tabButton:hover {background:white; color:#6a1b9a; border:2px solid #6a1b9a;}
+/* ===== TABS LOGIN / REG ===== */
+#authTabs {display:flex; justify-content:center; gap:10px; margin-bottom:20px; transition: all 0.3s;}
+.tabButton {
+  padding:10px 30px;
+  background:#6a1b9a;
+  color:white;
+  border:none;
+  border-radius:6px;
+  font-weight:bold;
+  cursor:pointer;
+  transition: all 0.5s;
+}
+.tabButton:hover { background:#7e2bcf; }
 .tabButton.active {background:white; color:#6a1b9a; border:2px solid #6a1b9a;}
 
+/* ===== INPUT & BUTTON ===== */
+input {width:85%; max-width:420px; display:block; margin:10px auto; padding:12px; font-size:1.1rem; border-radius:6px; border:1px solid #ccc;}
+button {width:85%; max-width:420px; margin:16px auto; padding:14px; font-size:1.2rem; font-weight:bold; border:none; border-radius:6px; cursor:pointer; background:#6a1b9a; color:white; transition: all 0.3s;}
+button:hover {background:white; color:#6a1b9a;}
+
 /* ===== MOSTRA PASSWORD ===== */
-.password-toggle {width:85%; max-width:420px; margin:10px auto; display:flex; gap:10px; align-items:center; font-size:1rem;}
-.password-toggle input[type="checkbox"] {margin:0; cursor:pointer;}
+.password-toggle {
+  display:flex;
+  align-items:center;
+  justify-content:flex-start;
+  gap:10px;
+  width:85%;
+  max-width:420px;
+  margin:0 auto 12px auto;
+  font-size:1rem;
+}
 
 /* ===== PASSWORD DIMENTICATA ===== */
 .forgot-password {text-align:center; margin-top:10px;}
-.forgot-password a {color:#6a1b9a; font-weight:bold; text-decoration:none;}
-.forgot-password a:hover {text-decoration:underline;}
+.forgot-password a {
+  color:#6a1b9a;
+  font-weight:bold;
+  text-decoration:underline;
+  cursor:pointer;
+}
+
+/* ===== SEZIONI ===== */
+#loginForm, #registerForm {transition: all 0.5s;}
 </style>
 </head>
 
 <body>
-<div class="container" id="loginPage">
+<div class="container">
   <img src="https://drive.google.com/thumbnail?id=1gozdQWrZKRs7PLNRrW-td4Ky4ehhhjmj&sz=w200" class="logo-login">
   <h2>Registrati o effettua l'accesso</h2>
 
@@ -42,20 +72,21 @@ button:hover {background:white; color:#6a1b9a; border:2px solid #6a1b9a;}
     <button class="tabButton" onclick="showAuthTab('register')">REGISTRATI</button>
   </div>
 
-  <!-- LOGIN FORM -->
+  <!-- LOGIN -->
   <div id="loginForm">
     <input type="email" id="login_email" placeholder="Email">
     <input type="password" id="login_pass" placeholder="Password">
     <div class="password-toggle">
-      <input type="checkbox" onclick="togglePassword('login_pass')"> Mostra password
+      <span>Mostra password</span>
+      <input type="checkbox" onclick="togglePassword('login_pass')">
     </div>
     <button onclick="login()">Accedi</button>
     <p class="forgot-password">
-      <a href="#" onclick="forgotPassword()">Password dimenticata?</a>
+      <a onclick="forgotPassword()">Password dimenticata?</a>
     </p>
   </div>
 
-  <!-- REGISTER FORM -->
+  <!-- REGISTRAZIONE -->
   <div id="registerForm" style="display:none;">
     <input type="text" id="reg_nome" placeholder="Nome">
     <input type="text" id="reg_cognome" placeholder="Cognome">
@@ -63,48 +94,84 @@ button:hover {background:white; color:#6a1b9a; border:2px solid #6a1b9a;}
     <input type="password" id="reg_pass" placeholder="Password">
     <input type="password" id="reg_pass_confirm" placeholder="Conferma Password">
     <div class="password-toggle">
-      <input type="checkbox" onclick="togglePassword('reg_pass','reg_pass_confirm')"> Mostra password
+      <span>Mostra password</span>
+      <input type="checkbox" onclick="togglePassword('reg_pass','reg_pass_confirm')">
     </div>
     <button onclick="register()">Registrati</button>
   </div>
 </div>
 
 <script>
+// ---------------- VARIABILE UTENTE ----------------
 let currentUser = null;
 
+// ---------------- FETCH UTILE ----------------
 async function apiFetch(endpoint, method='POST', body={}) {
-  const res = await fetch(endpoint, {
+  const res = await fetch(endpoint,{
     method,
     headers:{'Content-Type':'application/json'},
-    body: method==='POST' ? JSON.stringify(body) : undefined
+    body:method==='POST'?JSON.stringify(body):undefined
   });
   return res.json();
 }
 
+// ---------------- LOGIN ----------------
 async function login(){
-  const email = document.getElementById('login_email').value;
-  const password = document.getElementById('login_pass').value;
+  const email = document.getElementById("login_email").value;
+  const password = document.getElementById("login_pass").value;
   const res = await apiFetch('/api/login','POST',{email,password});
   if(res.ok){
-    localStorage.setItem('currentUser', JSON.stringify({email, nome:res.nome, ruolo:res.ruolo}));
+    currentUser = {email, nome:res.nome, ruolo:res.ruolo};
+    localStorage.setItem('currentUser', JSON.stringify(currentUser));
     window.location.href='/app.html';
   } else alert(res.msg);
 }
 
+// ---------------- REGISTRAZIONE ----------------
 async function register(){
   const res = await apiFetch('/api/register','POST',{
-    email:document.getElementById('reg_email').value,
-    nome:document.getElementById('reg_nome').value,
-    cognome:document.getElementById('reg_cognome').value,
-    password:document.getElementById('reg_pass').value,
-    passwordConfirm:document.getElementById('reg_pass_confirm').value
+    email: document.getElementById('reg_email').value,
+    nome: document.getElementById('reg_nome').value,
+    cognome: document.getElementById('reg_cognome').value,
+    password: document.getElementById('reg_pass').value,
+    passwordConfirm: document.getElementById('reg_pass_confirm').value
   });
   alert(res.msg);
   if(res.ok) window.location.href='/app.html';
 }
 
+// ---------------- PASSWORD DIMENTICATA ----------------
 function forgotPassword(){ alert("Gestita lato server"); }
 
+// ---------------- MOSTRA / NASCONDI PASSWORD ----------------
+function togglePassword(...ids){
+  ids.forEach(id=>{
+    const i=document.getElementById(id);
+    i.type=i.type==='password'?'text':'password';
+  });
+}
+
+// ---------------- TAB LOGIN / REG ----------------
 function showAuthTab(tab){
   const loginForm = document.getElementById('loginForm');
+  const registerForm = document.getElementById('registerForm');
+  loginForm.style.display = tab==='login'?'block':'none';
+  registerForm.style.display = tab==='register'?'block':'none';
 
+  document.querySelectorAll('#authTabs .tabButton').forEach((btn,index)=>{
+    btn.classList.remove('active');
+    if((tab==='login' && index===0) || (tab==='register' && index===1)){
+      btn.classList.add('active');
+    }
+  });
+}
+
+// ---------------- ONLOAD ----------------
+window.onload = ()=>{
+  if(localStorage.getItem('currentUser')){
+    window.location.href='/app.html';
+  }
+};
+</script>
+</body>
+</html>
