@@ -12,9 +12,20 @@ app.get("/", (req, res) => {res.sendFile(__dirname + "/public/login.html");});
 app.get("/login", (req, res) => {res.sendFile(__dirname + "/public/login.html");});
 app.get("/app", (req, res) => {res.sendFile(__dirname + "/public/app.html");});
 
+// ====== FUNZIONI DI UTILITÀ ======
+function timeToMinutes(timeStr) { // "HH:MM" → minuti totali
+  const [h, m] = timeStr.split(':').map(Number);
+  return h*60 + m;
+}
+function minutesToTime(mins) { // minuti totali → "HH:MM"
+  const h = Math.floor(mins/60);
+  const m = mins % 60;
+  return `${h}:${m===0?'00':m}`;
+}
+
 // ---------------- DATABASE SIMULATO ----------------
 let users = [
-  { email:'ricky.coppola8467@gmail.com', nome:'Admin', cognome:'Admin', password:'admin', ruolo:'admin' }
+  { email:'ricky.coppola8467@gmail.com', nome:'Riccardo', cognome:'Coppola', password:'admin', ruolo:'admin' }
 ];
 let bookings = [];
 
@@ -54,14 +65,21 @@ app.post('/api/resetPassword', (req,res)=>{
 // ---------------- PRENOTAZIONI ----------------
 app.post('/api/book', (req,res)=>{
   const { email, nome, cognome, campo, data, ora, durata } = req.body;
-  const startHour = parseFloat(ora.replace(':','.')); // es. 14:30 -> 14.5
-  const endHour = startHour + parseFloat(durata);
+
+  const startMinutes = timeToMinutes(ora); 
+  const durationMinutes = parseInt(durata)*60; // 1 ora = 60 min, 2 ore = 120 min
+  const endMinutes = startMinutes + durationMinutes;
+
+  // Controllo orari apertura/chiusura
+  if(startMinutes < 8*60 || endMinutes > 22*60)
+    return res.json({ok:false,msg:'Orario fuori apertura'});
 
   // Controllo sovrapposizione
   const overlapping = bookings.some(b => 
     b.start === data && b.campo === campo &&
-    (startHour < parseFloat(b.end) && endHour > parseFloat(b.startHour))
+    !(endMinutes <= b.startMinutes || startMinutes >= b.endMinutes)
   );
+
   if(overlapping) return res.json({ok:false,msg:'Slot già occupato'});
 
   bookings.push({
@@ -71,8 +89,8 @@ app.post('/api/book', (req,res)=>{
     cognome,
     campo,
     start: data,
-    startHour: startHour.toString(),
-    end: endHour.toString()
+    startMinutes,
+    endMinutes
   });
 
   res.json({ok:true});
@@ -88,24 +106,20 @@ app.post('/api/getSlots', (req,res) => {
     .map(b => ({
       start: parseFloat(b.startHour), 
       end: parseFloat(b.end), 
-      userNome: b.nome + (b.cognome ? ' ' + b.cognome[0] + '.' : '')
+      userNome: b.nome + (b.cognome ? ' ' + b.cognome.slice(0,2) : '')
     }));
 
   // Tutti gli orari disponibili dalle 8:00 alle 22:00
-  let allHours = [];
-  for(let h=8; h<=22-durata; h+=0.5) { // incrementi di 30 minuti
-    allHours.push(h);
-  }
+ let allMinutes = [];
+for(let m = 8*60; m <= 22*60 - durationMinutes; m += 30) {
+  allMinutes.push(m);
+}
 
-  // Filtra quelli liberi
-  const free = allHours.filter(h => {
-    return !busy.some(b => (h < b.end && h + durata > b.start)); 
-    // Controlla sovrapposizione
-  }).map(h => {
-    const hour = Math.floor(h);
-    const min = h % 1 === 0 ? '00' : '30';
-    return { start: `${hour}:${min}` };
-  });
+// Filtra quelli liberi
+const free = allMinutes.filter(m => {
+  return !busy.some(b => !(m + durationMinutes <= b.startMinutes || m >= b.endMinutes));
+}).map(m => ({ start: minutesToTime(m) }));
+
 
   res.json({ free, busy });
 });

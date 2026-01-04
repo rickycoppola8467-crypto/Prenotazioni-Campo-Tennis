@@ -7,131 +7,51 @@
 <link rel="icon" type="image/png" href="favicon.png">
 
 <style>
-/* ===== RESET ===== */
+/* ===== RESET BASE ===== */
 * { box-sizing: border-box; margin:0; padding:0; }
 body {font-family: Arial, sans-serif; background: #f4f6f8;}
 
 /* ===== CONTAINER ===== */
-.container {width:95%; max-width:900px; margin:auto;}
+.container {width:95%; max-width:1200px; margin:auto;}
 
 /* ===== TOP BAR ===== */
-#topBar {display:flex; background:#6a1b9a; height:60px; align-items:center; justify-content:space-between; padding:0 10px;}
+#topBar { display:flex; background:#6a1b9a; height:60px; align-items:center; justify-content:space-between; padding:0 10px; }
 #topBar .logo-bar {width:50px; height:50px; object-fit:contain;}
-.topButton {flex:1; margin:0 5px; padding:10px; background:#6a1b9a; color:white; border-radius:6px; font-weight:bold; text-align:center; cursor:pointer; transition: all 0.3s;}
-.topButton:hover {background:#7e2bcf; color:white;}
+.topButton {flex: 1; margin:0 5px; padding:10px; background:#6a1b9a; color:white; border-radius:6px; font-weight:bold; cursor:pointer; text-align:center; transition: all 0.2s;}
+.topButton:hover {background:#7e2bcf;}
 .topButton.active {background:white; color:#6a1b9a; border:2px solid #6a1b9a;}
 
-/* ===== SEZIONI ===== */
-.section {display:none; padding:20px 0;margin-top: 20px;}
-
 /* ===== CALENDARIO LAYOUT ===== */
-#calendarSection {
-  display: flex;
-  gap: 20px;
-  margin-top: 20px;
-}
+#calendarSection {display:flex; gap:20px; padding:20px 0;}
+#bookingForm {flex:1; display:flex; flex-direction:column; align-items:center; justify-content:flex-start;}
+#bookingForm label {font-size:1.2rem; margin:10px 0 5px 0; width:85%; max-width:420px;}
+#bookingForm input, #bookingForm select {font-size:1.1rem; width:85%; max-width:420px; margin-bottom:12px; padding:12px; border-radius:6px; border:1px solid #ccc;}
+#bookingForm button {font-size:1.2rem; margin-top:12px;}
 
-/* FORM PRENOTAZIONE LATO SINISTRO */
-#bookingForm {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
+/* ===== SLOT LAYOUT ===== */
+#calendarSlots {flex:1; display:flex; gap:10px; height:600px;}
+.slots-column {flex:1; display:flex; flex-direction:column; align-items:center; overflow-y:auto; padding:0 5px;}
 
-#bookingForm h2 {
-  font-size: 1.8rem;
-  margin-bottom: 12px;
-  text-align: center;
+/* ===== SLOT DISPONIBILI E OCCUPATI ===== */
+.slots-column h3 {margin-bottom:12px; text-align:center;}
+.slot-libero, .slot-occupato {
+  width:90%; min-height:60px; margin:8px 0; border-radius:6px; font-weight:bold; display:flex; align-items:center; justify-content:center; text-align:center; padding:8px;
 }
+.slot-libero {background:#4caf50; color:white; cursor:pointer;}
+.slot-occupato {background:#f44336; color:black; cursor:default;}
 
-#bookingForm label {
-  font-weight: bold;
-  margin-top: 12px;
-  margin-bottom: 6px;
-  font-size: 1.1rem;
-}
-
-#bookingForm input, #bookingForm select, #bookingForm button {
-  width: 80%;
-  max-width: 400px;
-  padding: 12px;
-  font-size: 1.1rem;
-  border-radius: 6px;
-  border: 1px solid #ccc;
-  margin: 6px auto;
-}
-
-#bookingForm button {
-  background-color: #6a1b9a;
-  color: white;
-  font-weight: bold;
-  cursor: pointer;
-  transition: all 0.3s;
-}
-
-#bookingForm button:hover {
-  background-color: #7e2bcf;
-  color: white;
-}
-
-/* SEZIONE ORARI LATO DESTRO */
-#calendarSlots {
-  flex: 1;
-  display: flex;
-  gap: 10px;
-}
-
-.slots-column {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-
-.slots-column h3 {
-  text-align: center;
-  margin-bottom: 12px;
-}
-
-/* SLOT LIBERI */
-.slot-libero {
-  width: 80%;
-  background-color: #4caf50;
-  color: white;
-  font-weight: bold;
-  min-height: 60px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-  border-radius: 6px;
-  margin: 6px 0;
-  cursor: pointer;
-}
-
-/* SLOT OCCUPATI */
-.slot-occupato {
-  width: 90%;
-  background-color: #f44336;
-  color: black;
-  font-weight: bold;
-  min-height: 60px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-  border-radius: 6px;
-  margin: 6px 0;
-  cursor: default;
-}
+/* Se la colonna supera l’80% dell’altezza, scrollabile */
+#slotsFree, #slotsBusy {flex:1; width:100%; overflow-y:auto; max-height:100%;}
 
 /* ===== STORICO PRENOTAZIONI ===== */
-.booking-upcoming {background:#4caf50; color:white; padding:10px; margin:6px 0; border-radius:6px; display:flex; justify-content:space-between; align-items:center;}
+.booking-upcoming {background:#4caf50; color:white; font-weight:bold; padding:10px; margin:6px 0; border-radius:6px; display:flex; justify-content:space-between; align-items:center;}
 .booking-past {background:#e0e0e0; color:black; font-weight:bold; padding:10px; margin:6px 0; border-radius:6px; display:flex; justify-content:space-between; align-items:center;}
-.delete-booking-btn {margin-left:10px; background:white; color:red; border:2px solid red; border-radius:4px; cursor:pointer; padding:2px 6px; transition: all 0.2s;}
+
+/* ===== BOTTONE CANCELLA ===== */
+.delete-booking-btn {background:white; color:red; border:2px solid red; border-radius:4px; cursor:pointer; padding:4px 6px; margin-left:10px; transition:all 0.2s;}
 .delete-booking-btn:hover {background:red; color:white;}
 </style>
+
 </head>
 
 <body>
