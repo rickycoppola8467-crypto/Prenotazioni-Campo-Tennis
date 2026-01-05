@@ -26,7 +26,7 @@ body {font-family: Arial, sans-serif; background: #f4f6f8;}
 #bookingForm {flex: 1; display:flex; flex-direction:column; align-items:flex-start; justify-content:flex-start;}
 #bookingForm label {font-size:1.2rem; margin:10px 0 5px 0; width:85%; max-width:420px;}
 #bookingForm input, #bookingForm select {font-size:1rem; width:85%; max-width:400px; margin-bottom:10px; padding:10px; border-radius:6px; border:1px solid #ccc;}
-#bookingForm button {font-size:1.1rem; margin-top:10px; padding:10px;}
+#bookingForm button { font-size:1.1rem; margin-top:15px; padding:12px; width:85%; max-width:400px; align-self:flex-start;}
 
 /* ===== SLOT LAYOUT ===== */
 #calendarSlots {flex:1; display:flex; gap:10px; height:600px;}
@@ -52,6 +52,15 @@ body {font-family: Arial, sans-serif; background: #f4f6f8;}
 /* ===== BOTTONE CANCELLA ===== */
 .delete-booking-btn {background:white; color:red; border:2px solid red; border-radius:4px; cursor:pointer; padding:4px 6px; margin-left:10px; transition:all 0.2s;}
 .delete-booking-btn:hover {background:red; color:white;}
+
+/* ===== MODAL ===== */
+.modal { position:fixed; inset:0; background:rgba(0,0,0,0.5); display:flex; justify-content:center; align-items:center; z-index:999;}
+.modal-content { background:white; padding:20px; border-radius:10px; width:90%; max-width:420px; display:flex; flex-direction:column; gap:10px;}
+.modal-content label { font-size:1.1rem;}
+.modal-content textarea { resize:none; min-height:80px; padding:10px; font-size:1rem;}
+.modal-actions { display:flex; justify-content:flex-end; gap:10px;}
+.modal-actions .danger { background:#f44336; color:white;}
+
 </style>
 
 </head>
@@ -130,9 +139,30 @@ body {font-family: Arial, sans-serif; background: #f4f6f8;}
   </div>
 </div>
 
+<!-- MODAL ANNULLA PRENOTAZIONE -->
+<div id="cancelModal" class="modal" style="display:none;">
+  <div class="modal-content">
+    <h3>Motivo annullamento</h3>
+
+    <label><input type="radio" name="cancelReason" value="Prenotazione errata"> Prenotazione errata</label>
+    <label><input type="radio" name="cancelReason" value="Meteo"> Meteo</label>
+    <label><input type="radio" name="cancelReason" value="Imprevisto"> Imprevisto</label>
+    <label><input type="radio" name="cancelReason" value="Altro"> Altro</label>
+
+    <textarea id="otherReason" placeholder="Scrivi il motivo..."
+      disabled></textarea>
+
+    <div class="modal-actions">
+      <button onclick="closeCancelModal()">Annulla</button>
+      <button class="danger" onclick="confirmCancel()">Conferma</button>
+    </div>
+  </div>
+</div>
+
 <script>
 // ---------- VARIABILI GLOBALI ----------
 let currentUser = JSON.parse(localStorage.getItem('currentUser')||'{}');
+let bookingToDelete = null;
 
 // ---------- FUNZIONE FETCH ----------
 async function apiFetch(endpoint, method='POST', body={}) {
@@ -254,32 +284,85 @@ async function loadMyBookings(){
 
 function displayMyBookings(data){
   const div = document.getElementById('myBookingsList');
-  div.innerHTML='';
-  if(!data || data.length===0){ div.innerHTML='<p>Nessuna prenotazione</p>'; return; }
+  div.innerHTML = '';
+
+  if(!data || data.length === 0){
+    div.innerHTML = '<p>Nessuna prenotazione</p>';
+    return;
+  }
+
   const now = new Date();
-  data.forEach(b=>{
-    const d = document.createElement('div');
+
+  data.forEach(b => {
+    const row = document.createElement('div');
     const bookingDate = new Date(b.start);
-    d.className = bookingDate>=now?'booking-upcoming':'booking-past';
-    d.style.display='flex'; d.style.justifyContent='space-between'; d.style.alignItems='center';
-    d.textContent = `${b.start} ${b.startHour||''}-${b.end||''} | Campo: ${b.campo}`;
+
+    row.className = bookingDate >= now ? 'booking-upcoming' : 'booking-past';
+    row.style.display = 'flex';
+    row.style.justifyContent = 'space-between';
+    row.style.alignItems = 'center';
+
+    // ---- TESTO PRENOTAZIONE (PUNTO 3) ----
+    const startTime = minutesToTime(b.startMinutes);
+    const endTime = minutesToTime(b.endMinutes);
+
+    const info = document.createElement('div');
+    info.textContent = `${b.start} | ${startTime}-${endTime} | Campo: ${b.campo}`;
+
+    // ---- BOTTONE ELIMINA SEPARATO (PUNTO 4) ----
     const delBtn = document.createElement('button');
-    delBtn.className='delete-booking-btn';
-    delBtn.title='Elimina prenotazione';
-    delBtn.innerHTML='🗑️';
-    delBtn.onclick=()=>deleteBooking(b.id);
-    d.appendChild(delBtn);
-    div.appendChild(d);
+    delBtn.className = 'delete-booking-btn';
+    delBtn.title = 'Elimina prenotazione';
+    delBtn.innerHTML = '🗑️';
+    delBtn.onclick = () => deleteBooking(b.id);
+
+    row.appendChild(info);
+    row.appendChild(delBtn);
+    div.appendChild(row);
   });
 }
 
 // ---------- CANCELLA PRENOTAZIONE ----------
-async function deleteBooking(id){
-  const motivo = prompt("Motivo cancellazione:\n1. Prenotazione errata\n2. Meteo\n3. Imprevisto\n4. Altro","Prenotazione errata");
-  if(!motivo) return;
-  if(!confirm("Sei sicuro di eliminare la prenotazione?")) return;
-  const res = await apiFetch('/api/deleteBooking','POST',{id});
-  alert(res.ok?'Prenotazione eliminata':'Errore');
+function deleteBooking(id){
+  bookingToDelete = id; // salva ID
+  document.getElementById('cancelModal').style.display = 'flex';
+
+  // reset stato modal
+  document.querySelectorAll('input[name="cancelReason"]').forEach(r => r.checked = false);
+  document.getElementById('otherReason').value = '';
+  document.getElementById('otherReason').disabled = true;
+}
+
+function closeCancelModal(){
+  document.getElementById('cancelModal').style.display = 'none';
+  bookingToDelete = null;
+}
+
+async function confirmCancel(){
+  const selected = document.querySelector('input[name="cancelReason"]:checked');
+  if(!selected){
+    alert('Seleziona un motivo');
+    return;
+  }
+
+  let motivo = selected.value;
+
+  if(motivo === 'Altro'){
+    const text = document.getElementById('otherReason').value.trim();
+    if(!text){
+      alert('Scrivi il motivo');
+      return;
+    }
+    motivo = `Altro: ${text}`;
+  }
+
+  const res = await apiFetch('/api/deleteBooking','POST',{
+    id: bookingToDelete,
+    motivo
+  });
+
+  alert(res.ok ? 'Prenotazione annullata' : 'Errore');
+  closeCancelModal();
   if(res.ok) loadMyBookings();
 }
 
@@ -325,6 +408,21 @@ function minutesToTime(mins){
   const m = mins % 60;
   return `${h}:${m===0?'00':m}`;
 }
+
+document.querySelectorAll('input[name="cancelReason"]').forEach(radio=>{
+  radio.addEventListener('change', ()=>{
+    document.addEventListener('change', (e) => {
+  if(e.target.name === 'cancelReason'){
+    const other = document.getElementById('otherReason');
+    if(e.target.value === 'Altro'){
+      other.disabled = false;
+      other.focus();
+    } else {
+      other.disabled = true;
+      other.value = '';
+    }
+  }
+});
 
 </script>
 </body>

@@ -94,8 +94,8 @@ app.post('/api/getSlots', (req,res) => {
   const busy = bookings
     .filter(b => b.start === data && b.campo === campo)
     .map(b => ({
-      startMinutes: b.startMinutes,
-      endMinutes: b.endMinutes,
+      start: b.startMinutes,
+      end: b.endMinutes,
       userNome: b.nome + (b.cognome ? ' ' + b.cognome.slice(0,2) : '')
     }));
 
