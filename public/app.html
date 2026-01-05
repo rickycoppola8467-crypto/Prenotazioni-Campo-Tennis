@@ -23,10 +23,10 @@ body {font-family: Arial, sans-serif; background: #f4f6f8;}
 
 /* ===== CALENDARIO LAYOUT ===== */
 #calendarSection {display:flex; gap:20px; padding:20px 0;}
-#bookingForm {flex:1; display:flex; flex-direction:column; align-items:center; justify-content:flex-start;}
+#bookingForm {flex: 0 0 40%; display:flex; flex-direction:column; align-items:center; justify-content:flex-start;}
 #bookingForm label {font-size:1.2rem; margin:10px 0 5px 0; width:85%; max-width:420px;}
-#bookingForm input, #bookingForm select {font-size:1.1rem; width:85%; max-width:420px; margin-bottom:12px; padding:12px; border-radius:6px; border:1px solid #ccc;}
-#bookingForm button {font-size:1.2rem; margin-top:12px;}
+#bookingForm input, #bookingForm select {font-size:1rem; width:85%; max-width:400px; margin-bottom:10px; padding:10px; border-radius:6px; border:1px solid #ccc;}
+#bookingForm button {font-size:1.1rem; margin-top:10px; padding:10px;}
 
 /* ===== SLOT LAYOUT ===== */
 #calendarSlots {flex:1; display:flex; gap:10px; height:600px;}
@@ -167,10 +167,19 @@ function logout(){
   window.location.href='/login.html';
 }
 
-// ---------- SLOT CALENDARIO ----------
-async function loadSlots(){
-  if(!currentUser?.email){ alert('Devi fare login'); return; }
+// ---------- CARICA SLOT CALENDARIO ----------
+async function searchAvailability() {
+  if(!currentUser?.email){ 
+    alert('Devi fare login'); 
+    return; 
+  }
+
   const data = document.getElementById('data').value;
+  if(!data){
+    alert('Seleziona una data prima di cercare la disponibilità');
+    return;
+  }
+
   const campo = document.getElementById('campo').value;
   const durata = Number(document.getElementById('durata').value);
 
@@ -178,7 +187,7 @@ async function loadSlots(){
   showSlots(res);
 }
 
-// ---------- SLOT CALENDARIO ----------
+// ---------- MOSTRA SLOT CALENDARIO ----------
 function showSlots(data){
   const freeDiv = document.getElementById('slotsFree');
   const busyDiv = document.getElementById('slotsBusy');
