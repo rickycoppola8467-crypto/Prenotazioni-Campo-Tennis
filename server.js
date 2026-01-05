@@ -12,17 +12,6 @@ app.get("/", (req, res) => {res.sendFile(__dirname + "/public/login.html");});
 app.get("/login", (req, res) => {res.sendFile(__dirname + "/public/login.html");});
 app.get("/app", (req, res) => {res.sendFile(__dirname + "/public/app.html");});
 
-// ====== FUNZIONI DI UTILITÀ ======
-function timeToMinutes(timeStr) { // "HH:MM" → minuti totali
-  const [h, m] = timeStr.split(':').map(Number);
-  return h*60 + m;
-}
-function minutesToTime(mins) { // minuti totali → "HH:MM"
-  const h = Math.floor(mins/60);
-  const m = mins % 60;
-  return `${h}:${m===0?'00':m}`;
-}
-
 // ---------------- DATABASE SIMULATO ----------------
 let users = [
   { email:'ricky.coppola8467@gmail.com', nome:'Riccardo', cognome:'Coppola', password:'admin', ruolo:'admin' }
@@ -96,33 +85,53 @@ app.post('/api/book', (req,res)=>{
   res.json({ok:true});
 });
 
-// ---------------- CARICA SLOT ----------------
-app.post('/api/getSlots', (req,res) => {
-  const { data, campo, durata } = req.body;
+// ---------------- CARICA SLOT ---------------- 
+app.post('/api/getSlots', (req, res) => {
+  try {
+    const { data, campo, durata } = req.body;
+    if (!data || !campo || !durata) return res.status(400).json({ ok: false, msg: 'Dati mancanti' });
 
-  // Prenotazioni esistenti per quel giorno e campo
-  const busy = bookings
-    .filter(b => b.start === data && b.campo === campo)
-    .map(b => ({
-      start: parseFloat(b.startHour), 
-      end: parseFloat(b.end), 
-      userNome: b.nome + (b.cognome ? ' ' + b.cognome.slice(0,2) : '')
-    }));
+    const durationMinutes = Number(durata) * 60; // durata in minuti
+    if (isNaN(durationMinutes) || durationMinutes <= 0) return res.status(400).json({ ok: false, msg: 'Durata non valida' });
 
-  // Tutti gli orari disponibili dalle 8:00 alle 22:00
- let allMinutes = [];
-for(let m = 8*60; m <= 22*60 - durationMinutes; m += 30) {
-  allMinutes.push(m);
+    // Prenotazioni esistenti per quel giorno e campo
+    const busy = bookings
+      .filter(b => b.start === data && b.campo === campo)
+      .map(b => ({
+        startMinutes: timeToMinutes(b.startHour),   // startHour deve essere "HH:MM"
+        endMinutes: timeToMinutes(b.end),           // end deve essere "HH:MM"
+        userNome: b.nome + (b.cognome ? ' ' + b.cognome.slice(0, 2) : '')
+      }));
+
+    // Tutti gli orari disponibili dalle 8:00 alle 22:00 (step 30 minuti)
+    const allMinutes = [];
+    for (let m = 8 * 60; m <= 22 * 60 - durationMinutes; m += 30) {
+      allMinutes.push(m);
+    }
+
+    // Filtra quelli liberi
+    const free = allMinutes.filter(m => {
+      return !busy.some(b => !(m + durationMinutes <= b.startMinutes || m >= b.endMinutes));
+    }).map(m => ({ start: minutesToTime(m) }));
+
+    res.json({ free, busy });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ ok: false, msg: 'Errore server' });
+  }
+});
+
+// ---------------- FUNZIONI DI UTILITA' ----------------
+function timeToMinutes(timeStr) { // "HH:MM" → minuti totali
+  const [h, m] = timeStr.split(':').map(Number);
+  return h * 60 + m;
 }
 
-// Filtra quelli liberi
-const free = allMinutes.filter(m => {
-  return !busy.some(b => !(m + durationMinutes <= b.startMinutes || m >= b.endMinutes));
-}).map(m => ({ start: minutesToTime(m) }));
-
-
-  res.json({ free, busy });
-});
+function minutesToTime(mins) { // minuti totali → "HH:MM"
+  const h = Math.floor(mins / 60);
+  const m = mins % 60;
+  return `${h}:${m === 0 ? '00' : m}`;
+}
 
 // ---------------- STORICO PRENOTAZIONI ----------------
 app.get('/api/myBookings/:email', (req,res)=>{

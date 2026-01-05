@@ -39,13 +39,16 @@ body {font-family: Arial, sans-serif; background: #f4f6f8;}
 }
 .slot-libero {background:#4caf50; color:white; cursor:pointer;}
 .slot-occupato {background:#f44336; color:black; cursor:default;}
-
 /* Se la colonna supera l’80% dell’altezza, scrollabile */
 #slotsFree, #slotsBusy {flex:1; width:100%; overflow-y:auto; max-height:100%;}
 
 /* ===== STORICO PRENOTAZIONI ===== */
 .booking-upcoming {background:#4caf50; color:white; font-weight:bold; padding:10px; margin:6px 0; border-radius:6px; display:flex; justify-content:space-between; align-items:center;}
 .booking-past {background:#e0e0e0; color:black; font-weight:bold; padding:10px; margin:6px 0; border-radius:6px; display:flex; justify-content:space-between; align-items:center;}
+
+.primary-button {width:85%; max-width:420px; margin:16px auto; padding:14px; background:#6a1b9a;
+  color:white; border:none; border-radius:8px; font-size:1.2rem; font-weight:bold; cursor:pointer; transition:all 0.3s ease;}
+.primary-button:hover {background:#7e2bcf;}
 
 /* ===== BOTTONE CANCELLA ===== */
 .delete-booking-btn {background:white; color:red; border:2px solid red; border-radius:4px; cursor:pointer; padding:4px 6px; margin-left:10px; transition:all 0.2s;}
@@ -59,12 +62,13 @@ body {font-family: Arial, sans-serif; background: #f4f6f8;}
   <!-- TOP BAR -->
   <div id="topBar">
     <img src="https://drive.google.com/thumbnail?id=1gozdQWrZKRs7PLNRrW-td4Ky4ehhhjmj&sz=w200" class="logo-bar">
-    <div class="topButton" onclick="showSection('home')">HOME</div>
-    <div class="topButton" onclick="showSection('calendar')">CALENDARIO</div>
-    <div class="topButton" onclick="showSection('myBookings')">STORICO PRENOTAZIONI</div>
-    <div class="topButton" onclick="showSection('profile')">PROFILO</div>
-    <div class="topButton" onclick="showSection('gallery')">GALLERY</div>
-    <div class="topButton" onclick="logout()">LOGOUT</div>
+<div class="topButton" data-section="home" onclick="showSection('home')">HOME</div>
+<div class="topButton" data-section="calendar" onclick="showSection('calendar')">CALENDARIO</div>
+<div class="topButton" data-section="myBookings" onclick="showSection('myBookings')">STORICO PRENOTAZIONI</div>
+<div class="topButton" data-section="profile" onclick="showSection('profile')">PROFILO</div>
+<div class="topButton" data-section="gallery" onclick="showSection('gallery')">GALLERY</div>
+<div class="topButton" data-section="logout" onclick="logout()">LOGOUT</div>
+
   </div>
 
   <div class="container" id="appContent">
@@ -92,7 +96,8 @@ body {font-family: Arial, sans-serif; background: #f4f6f8;}
         </select>
         <label id="userLabel" style="display:none;">Prenota per:</label>
         <select id="selectUser" style="display:none;"></select>
-        <button onclick="loadSlots()">Cerca disponibilità</button>
+        <button class="primary-button" id="searchSlotsBtn" onclick="searchAvailability()">Cerca 	disponibilità</button>
+
       </div>
       <div id="calendarSlots">
         <div class="slots-column">
@@ -141,14 +146,19 @@ async function apiFetch(endpoint, method='POST', body={}) {
 }
 
 // ---------- SHOW SEZIONE ----------
-function showSection(sec){
-  document.querySelectorAll('.section').forEach(s=>s.style.display='none');
-  const map = {home:'homeSection', calendar:'calendarSection', myBookings:'myBookingsSection', profile:'profileSection', gallery:'gallerySection'};
-  const section = document.getElementById(map[sec]);
-  if(section) section.style.display = sec==='calendar'?'flex':'block';
+function showSection(id){
+  // Nasconde tutte le sezioni
+  document.querySelectorAll('.section').forEach(s => s.style.display='none');
+  const section = document.getElementById(id+'Section');
+  if(section) section.style.display='block';
 
-  document.querySelectorAll('#topBar .topButton').forEach(btn=>btn.classList.remove('active'));
-  document.querySelector(`#topBar .topButton[onclick="showSection('${sec}')"]`).classList.add('active');
+  // Aggiorna i bottoni attivi
+  document.querySelectorAll('.topButton').forEach(b => b.classList.remove('active'));
+  const btn = document.querySelector(`.topButton[data-section="${id}"]`);
+  if(btn) btn.classList.add('active');
+
+  // Salva sezione attiva
+  localStorage.setItem('activeSection', id);
 }
 
 // ---------- LOGOUT ----------
@@ -175,22 +185,39 @@ function showSlots(data){
   freeDiv.innerHTML = ''; 
   busyDiv.innerHTML = '';
 
-  if(data.free.length===0) freeDiv.innerHTML = '<p>Nessuna disponibilità</p>';
-  data.free.forEach(s => {
-    const btn = document.createElement('button');
-    btn.textContent = s.start; // es. 8:00, 9:00 ecc.
-    btn.className = 'slot-libero';
-    btn.onclick = () => book(s.start);
-    freeDiv.appendChild(btn);
-  });
+  // SLOT LIBERI
+  if(!data.free || data.free.length === 0){
+    freeDiv.innerHTML = '<p>Nessuna disponibilità</p>';
+  } else {
+    data.free.forEach(s => {
+      const btn = document.createElement('button');
+      btn.className = 'slot-libero';
+      btn.textContent = s.start; // es. "08:00"
+      btn.onclick = () => book(s.start);
+      freeDiv.appendChild(btn);
+    });
+  }
 
-  if(data.busy.length===0) busyDiv.innerHTML = '<p>Nessuna prenotazione</p>';
-  data.busy.forEach(b => {
-    const div = document.createElement('div');
-    div.className = 'slot-occupato';
-    div.textContent = `${b.start}-${b.end} | Occupato da ${b.userNome}`;
-    busyDiv.appendChild(div);
-  });
+  // SLOT OCCUPATI
+  if(!data.busy || data.busy.length === 0){
+    busyDiv.innerHTML = '<p>Nessuna prenotazione</p>';
+  } else {
+    data.busy.forEach(b => {
+      const div = document.createElement('div');
+      div.className = 'slot-occupato';
+
+      const start = typeof b.start === 'number'
+        ? minutesToTime(b.start)
+        : b.start;
+
+      const end = typeof b.end === 'number'
+        ? minutesToTime(b.end)
+        : b.end;
+
+      div.textContent = `${start} - ${end} | Occupato da ${b.userNome}`;
+      busyDiv.appendChild(div);
+    });
+  }
 }
 
 // ---------- PRENOTAZIONE ----------
@@ -250,13 +277,15 @@ async function deleteBooking(id){
 
 // ---------- ONLOAD ----------
 window.onload = ()=>{
+const currentUser = JSON.parse(localStorage.getItem('currentUser'));
   if(!currentUser?.email){
     window.location.href='/login.html';
     return;
   }
-  showSection('home');
+    const lastSection = localStorage.getItem('activeSection') || 'home';
+  showSection(lastSection);
+  applyRoleUI();
   loadMyBookings();
-  if(currentUser.ruolo==='admin') applyRoleUI();
 };
 
 // ---------- APPLICA RUOLO ADMIN ----------
@@ -277,6 +306,16 @@ async function applyRoleUI() {
       select.appendChild(opt);
     });
   }
+}
+
+function timeToMinutes(timeStr){
+  const [h,m] = timeStr.split(':').map(Number);
+  return h*60 + m;
+}
+function minutesToTime(mins){
+  const h = Math.floor(mins/60);
+  const m = mins % 60;
+  return `${h}:${m===0?'00':m}`;
 }
 
 </script>
