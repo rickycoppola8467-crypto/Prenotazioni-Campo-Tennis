@@ -409,19 +409,18 @@ function minutesToTime(mins){
   return `${h}:${m===0?'00':m}`;
 }
 
+ // Listener radio "Altro"
 document.querySelectorAll('input[name="cancelReason"]').forEach(radio=>{
   radio.addEventListener('change', ()=>{
-    document.addEventListener('change', (e) => {
-  if(e.target.name === 'cancelReason'){
     const other = document.getElementById('otherReason');
-    if(e.target.value === 'Altro'){
+    if(radio.value === 'Altro'){
       other.disabled = false;
       other.focus();
     } else {
       other.disabled = true;
       other.value = '';
     }
-  }
+  });
 });
 
 </script>
