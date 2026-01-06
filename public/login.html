@@ -53,6 +53,13 @@ button:hover {background:#7e2bcf; color:white;}
 
 /* ===== ERROR MESSAGE ===== */
 #errorMsg {text-align:center; color:red; margin-top:10px;}
+
+/* ===== MODAL RESET PASSWORD===== */
+.modal-overlay{ position:fixed; inset:0; background:rgba(0,0,0,0.6); display:flex; justify-content:center; align-items:center; z-index:999;}
+.modal-box{ background:#fff; padding:25px; border-radius:10px; width:90%; max-width:400px;}
+.modal-box input{ width:100%; padding:10px; margin-bottom:12px;}
+.modal-actions{ display:flex; justify-content:space-between;}
+
 </style>
 
 </head>
@@ -96,6 +103,27 @@ button:hover {background:#7e2bcf; color:white;}
   </div>
 
   <div id="errorMsg"></div>
+</div>
+
+<!-- MODAL PASSWORD DIMENTICATA -->
+<div id="resetModal" class="modal-overlay" style="display:none;">
+  <div class="modal-box">
+    <h2>Reimposta password</h2>
+
+    <label>Email</label>
+    <input type="email" id="resetEmail">
+
+    <label>Nuova password</label>
+    <input type="password" id="resetPassword">
+
+    <label>Conferma password</label>
+    <input type="password" id="resetPasswordConfirm">
+
+    <div class="modal-actions">
+      <button onclick="closeResetModal()">Annulla</button>
+      <button class="primary-button" onclick="confirmResetPassword()">Conferma</button>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -145,16 +173,37 @@ async function register(){
 }
 
 // ---------- RESET PASSWORD ----------
-async function forgotPassword(){
-  const email = prompt("Inserisci la tua email:");
-  if(!email) return;
-  const newPassword = prompt("Inserisci la nuova password:");
-  if(!newPassword) return;
-  const confirmPassword = prompt("Conferma la nuova password:");
-  if(newPassword!==confirmPassword){ alert("Password non corrispondono"); return; }
+function openResetModal(){
+  document.getElementById('resetModal').style.display = 'flex';
+}
 
-  const res = await apiFetch('/api/resetPassword','POST',{email,newPassword,confirmPassword});
-  alert(res.msg);
+function closeResetModal(){
+  document.getElementById('resetModal').style.display = 'none';
+}
+
+async function confirmResetPassword(){
+  const email = document.getElementById('resetEmail').value.trim();
+  const pass1 = document.getElementById('resetPassword').value;
+  const pass2 = document.getElementById('resetPasswordConfirm').value;
+
+  if(!email || !pass1 || !pass2){
+    alert('Compila tutti i campi');
+    return;
+  }
+
+  if(pass1 !== pass2){
+    alert('Le password non coincidono');
+    return;
+  }
+
+  const res = await apiFetch('/api/resetPassword','POST',{
+    email,
+    newPassword: pass1,
+    confirmPassword: pass2
+  });
+
+  alert(res.ok ? 'Password aggiornata' : res.msg);
+  if(res.ok) closeResetModal();
 }
 
 // ---------- MOSTRA/NASCONDI PASSWORD ----------
