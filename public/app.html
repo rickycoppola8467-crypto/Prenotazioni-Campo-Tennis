@@ -295,29 +295,40 @@ function displayMyBookings(data){
 
   data.forEach(b => {
     const row = document.createElement('div');
-    const bookingDate = new Date(b.start);
+    
+    // ---- Calcolo orario prenotazione ----
+    const [year, month, day] = b.start.split('-').map(Number);
+    const endTimeParts = minutesToTime(b.endMinutes).split(':').map(Number);
+    const bookingEnd = new Date(year, month-1, day, endTimeParts[0], endTimeParts[1]);
 
-    row.className = bookingDate >= now ? 'booking-upcoming' : 'booking-past';
+    row.className = bookingEnd > now ? 'booking-upcoming' : 'booking-past';
     row.style.display = 'flex';
     row.style.justifyContent = 'space-between';
     row.style.alignItems = 'center';
 
-    // ---- TESTO PRENOTAZIONE (PUNTO 3) ----
+    // ---- TESTO PRENOTAZIONE ----
     const startTime = minutesToTime(b.startMinutes);
     const endTime = minutesToTime(b.endMinutes);
 
     const info = document.createElement('div');
     info.textContent = `${b.start} | ${startTime}-${endTime} | Campo: ${b.campo}`;
 
-    // ---- BOTTONE ELIMINA SEPARATO (PUNTO 4) ----
+    // ---- BOTTONE ELIMINA IN WRAPPER SEPARATO ----
     const delBtn = document.createElement('button');
     delBtn.className = 'delete-booking-btn';
     delBtn.title = 'Elimina prenotazione';
     delBtn.innerHTML = '🗑️';
     delBtn.onclick = () => deleteBooking(b.id);
 
-    row.appendChild(info);
-    row.appendChild(delBtn);
+    const infoWrapper = document.createElement('div');
+    infoWrapper.appendChild(info);
+
+    const btnWrapper = document.createElement('div');
+    btnWrapper.appendChild(delBtn);
+
+    row.appendChild(infoWrapper);
+    row.appendChild(btnWrapper);
+
     div.appendChild(row);
   });
 }
